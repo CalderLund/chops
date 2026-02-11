@@ -209,7 +209,14 @@ function CompoundNode({ data, selected }: CompoundNodeProps) {
         }}
         {...sharedProps}
       >
-        <Handle type="target" position={Position.Top} className="!opacity-0" />
+        <Handle type="target" position={Position.Top} id="t-top" className="!opacity-0" />
+        <Handle type="target" position={Position.Bottom} id="t-bottom" className="!opacity-0" />
+        <Handle type="target" position={Position.Left} id="t-left" className="!opacity-0" />
+        <Handle type="target" position={Position.Right} id="t-right" className="!opacity-0" />
+        <Handle type="source" position={Position.Top} id="s-top" className="!opacity-0" />
+        <Handle type="source" position={Position.Bottom} id="s-bottom" className="!opacity-0" />
+        <Handle type="source" position={Position.Left} id="s-left" className="!opacity-0" />
+        <Handle type="source" position={Position.Right} id="s-right" className="!opacity-0" />
         {hovered ? (
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div
@@ -239,7 +246,6 @@ function CompoundNode({ data, selected }: CompoundNodeProps) {
             {diffLabelAbbrev}
           </div>
         )}
-        <Handle type="source" position={Position.Bottom} className="!opacity-0" />
       </div>
     );
   }
@@ -273,7 +279,14 @@ function CompoundNode({ data, selected }: CompoundNodeProps) {
       }}
       {...sharedProps}
     >
-      <Handle type="target" position={Position.Top} className="!opacity-0" />
+      <Handle type="target" position={Position.Top} id="t-top" className="!opacity-0" />
+      <Handle type="target" position={Position.Bottom} id="t-bottom" className="!opacity-0" />
+      <Handle type="target" position={Position.Left} id="t-left" className="!opacity-0" />
+      <Handle type="target" position={Position.Right} id="t-right" className="!opacity-0" />
+      <Handle type="source" position={Position.Top} id="s-top" className="!opacity-0" />
+      <Handle type="source" position={Position.Bottom} id="s-bottom" className="!opacity-0" />
+      <Handle type="source" position={Position.Left} id="s-left" className="!opacity-0" />
+      <Handle type="source" position={Position.Right} id="s-right" className="!opacity-0" />
 
       <div className="font-semibold text-[13px] whitespace-nowrap" style={{ color: focusedText }}>
         {formatName(data.scale)}
@@ -301,7 +314,6 @@ function CompoundNode({ data, selected }: CompoundNodeProps) {
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!opacity-0" />
     </div>
   );
 }

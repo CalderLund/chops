@@ -66,12 +66,45 @@ function getLayerFromNode(node: GraphNode): number {
   return (scaleTier - 1) * 3 + otherChanges;
 }
 
+function calculateRadialLayout(
+  nodes: GraphNode[],
+  focusedNodeId: string,
+): { positions: Map<string, { x: number; y: number }>; distances: Map<string, number> } {
+  const positions = new Map<string, { x: number; y: number }>();
+  const distances = new Map<string, number>();
+
+  positions.set(focusedNodeId, { x: 0, y: 0 });
+  distances.set(focusedNodeId, 0);
+
+  const neighbors = nodes.filter((n) => n.id !== focusedNodeId);
+  if (neighbors.length === 0) return { positions, distances };
+
+  // Radius scales with neighbor count so nodes don't overlap
+  const nodeWidth = 100;
+  const minRadius = 140;
+  const circumferenceRadius = (neighbors.length * nodeWidth) / (2 * Math.PI);
+  const radius = Math.max(minRadius, circumferenceRadius);
+
+  const startAngle = -Math.PI / 2;
+  const angleStep = (2 * Math.PI) / neighbors.length;
+
+  for (let i = 0; i < neighbors.length; i++) {
+    const angle = startAngle + i * angleStep;
+    positions.set(neighbors[i].id, {
+      x: radius * Math.cos(angle),
+      y: radius * Math.sin(angle),
+    });
+    distances.set(neighbors[i].id, 1);
+  }
+
+  return { positions, distances };
+}
+
 function calculateDagreLayout(
   nodes: GraphNode[],
   edges: GraphEdge[],
   centerNodeId: string | null,
   focusedNodeId: string | null,
-  flatLayout: boolean = false,
 ): { positions: Map<string, { x: number; y: number }>; distances: Map<string, number> } {
   const positions = new Map<string, { x: number; y: number }>();
   const distances = new Map<string, number>();
@@ -82,15 +115,7 @@ function calculateDagreLayout(
 
   const layers = new Map<string, number>();
   for (const node of nodes) {
-    // When a node is selected (flatLayout), use a simple 2-level layout:
-    // selected node at top, all neighbors at the same level below.
-    // This prevents 1-hop neighbors from spreading across multiple visual tiers.
-    const layer =
-      flatLayout && focusedNodeId
-        ? node.id === focusedNodeId
-          ? 0
-          : 1
-        : getLayerFromNode(node);
+    const layer = getLayerFromNode(node);
     layers.set(node.id, layer);
     distances.set(node.id, layer);
   }
@@ -239,11 +264,12 @@ function SkillGraphInner({
     ? visibleNodes.find((n) => n.id === detailFocusId) ?? null
     : null;
 
-  const { positions } = useMemo(
-    () =>
-      calculateDagreLayout(visibleNodes, visibleEdges, centerNodeId, detailFocusId, !!selectedNodeId),
-    [visibleNodes, visibleEdges, centerNodeId, detailFocusId, selectedNodeId],
-  );
+  const { positions } = useMemo(() => {
+    if (selectedNodeId && detailFocusId) {
+      return calculateRadialLayout(visibleNodes, detailFocusId);
+    }
+    return calculateDagreLayout(visibleNodes, visibleEdges, centerNodeId, detailFocusId);
+  }, [visibleNodes, visibleEdges, centerNodeId, detailFocusId, selectedNodeId]);
 
   const visibleNeighborMap = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -288,7 +314,7 @@ function SkillGraphInner({
     if (selectedNodeId && selectedNodeId !== prevSelectedRef.current) {
       const pos = positions.get(selectedNodeId);
       if (pos) {
-        setCenter(pos.x, pos.y + 120, { zoom: 0.9, duration: 300 });
+        setCenter(pos.x, pos.y, { zoom: 0.9, duration: 300 });
       }
       prevSelectedRef.current = selectedNodeId;
     } else if (!selectedNodeId) {
@@ -393,7 +419,7 @@ function SkillGraphInner({
           id: edge.id,
           source: actualSource,
           target: actualTarget,
-          type: 'default',
+          type: 'straight',
           style: baseStyle,
           data: edge.data,
         };
@@ -433,7 +459,7 @@ function SkillGraphInner({
         minZoom={0.1}
         maxZoom={2}
         defaultEdgeOptions={{
-          type: 'default',
+          type: 'straight',
         }}
       >
         <Background color="var(--graph-dot, #374151)" gap={20} />
