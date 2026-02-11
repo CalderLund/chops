@@ -12,6 +12,7 @@
     "dev": "tsx src/cli.ts",
     "dev:web": "cd web && npm run dev",
     "serve": "tsx src/server.ts",
+    "dev:up": "bash dev.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run tests/integration",
