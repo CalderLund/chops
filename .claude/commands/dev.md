@@ -1,0 +1,1 @@
+Start the dev servers (backend + frontend) for this worktree by running `bash dev.sh` from the project root. Show the user the output so they can see which ports were assigned. Keep the process running in the background so the user can continue working.

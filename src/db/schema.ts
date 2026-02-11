@@ -144,6 +144,7 @@ export function getDbPath(): string {
 export function createDatabase(dbPath?: string): Database.Database {
   const finalPath = dbPath ?? getDbPath();
   const db = new Database(finalPath);
+  db.pragma('journal_mode = WAL');
 
   // Check if there's an existing database that needs migration
   const practiceLogExists = db
