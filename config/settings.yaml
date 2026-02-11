@@ -1,0 +1,22 @@
+# EMA smoothing factor (higher = more weight on recent)
+ema_alpha: 0.3
+
+# Stability threshold
+stability:
+  min_attempts: 3       # Need 3 attempts before considered stable
+  ema_ratio: 0.90       # ema_npm must be >= 90% of best_npm
+
+# Scoring weights
+# Note: There's typically 1 repeat candidate vs many exploration candidates
+# So repeat needs a MUCH higher score to overcome the numbers
+scoring:
+  proximity_one_change: 1.0
+  proximity_repeat: 2.0     # Much higher than one-change to overcome candidate count
+  stability_ready: 2.0      # Strong bonus for stable parent
+  stability_not_ready: 0.0  # Zero bonus for unstable parent - don't advance!
+  novelty_max_days: 7
+  novelty_weight: 0.1       # Minimal novelty chasing
+  exploration_bonus: 0.05   # Tiny exploration bonus
+
+# All 12 keys
+keys: [C, Db, D, Eb, E, F, Gb, G, Ab, A, Bb, B]

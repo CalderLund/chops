@@ -1,0 +1,30 @@
+# Rhythm configuration
+# Each rhythm has a notes_per_beat which determines pattern length
+
+entry_point:
+  rhythm: 8ths
+
+# Rhythm ladder - linear progression (each step adds 1 note per beat)
+rhythms:
+  - id: 8ths
+    notes_per_beat: 2
+    next: [16ths]
+
+  - id: 16ths
+    notes_per_beat: 4
+    next: [triplets]
+
+  - id: triplets
+    notes_per_beat: 3
+    next: [quintuplets]
+
+  - id: quintuplets
+    notes_per_beat: 5
+    next: [sextuplets]
+
+  - id: sextuplets
+    notes_per_beat: 6
+    next: []
+
+# Phase 1: All patterns are continuous (all x's)
+# Phase 2+: Will add syncopation (-) and accents (X)

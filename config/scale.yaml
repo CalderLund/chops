@@ -1,0 +1,139 @@
+# Scale configuration
+# Tier-based progression: same tier = free lateral movement,
+# lower tiers = always accessible, higher tiers = via `next` edges one tier at a time.
+# Tonality and uses metadata help guitarists understand each scale's musical context.
+
+entry_point: pentatonic_minor
+
+tiers:
+  1: [pentatonic_minor, blues_minor, pentatonic_major]
+  2: [minor, major, blues_major]
+  3: [mixolydian, dorian, phrygian, lydian, harmonic_minor]
+  4: [melodic_minor, phrygian_dominant, hungarian_minor, double_harmonic_major, harmonic_major]
+  5: [lydian_dominant, mixolydian_b6, locrian_sharp2, dorian_b2, altered, diminished_hw, diminished_wh, whole_tone]
+
+scales:
+  # Tier 1 - Universal foundations
+  - id: pentatonic_minor
+    next: [pentatonic_major, minor, blues_minor]
+    tonality: "Minor - the foundation"
+    uses: "Rock, blues, country lead. Works over almost anything minor."
+
+  - id: blues_minor
+    next: [minor, blues_major]
+    tonality: "Minor with chromatic passing tone"
+    uses: "Blues, rock, funk solos. The 'blue note' adds grit."
+
+  - id: pentatonic_major
+    next: [major, blues_major]
+    tonality: "Major - bright and open"
+    uses: "Country, pop, classic rock. Bright, happy soloing."
+
+  # Tier 2 - Core diatonic
+  - id: minor
+    next: [dorian, harmonic_minor, phrygian]
+    tonality: "Natural minor / Aeolian mode"
+    uses: "Sad/dark rock, metal, classical. Full 7-note minor palette."
+
+  - id: major
+    next: [mixolydian, lydian, harmonic_major]
+    tonality: "Ionian mode"
+    uses: "Pop, jazz, classical. The reference scale."
+
+  - id: blues_major
+    next: [major, mixolydian]
+    tonality: "Major with chromatic passing tone"
+    uses: "Blues, jazz, country. Bridges major and minor sounds."
+
+  # Tier 3 - Modes & harmonic variants
+  - id: mixolydian
+    next: [lydian_dominant, mixolydian_b6]
+    tonality: "Major with b7"
+    uses: "Blues-rock, funk, jam band. Dominant 7th flavor."
+
+  - id: dorian
+    next: [melodic_minor, dorian_b2]
+    tonality: "Minor with raised 6th"
+    uses: "Jazz, funk, Santana-style. Brighter than natural minor."
+
+  - id: phrygian
+    next: [phrygian_dominant, locrian_sharp2]
+    tonality: "Minor with b2"
+    uses: "Metal, flamenco, Middle Eastern. Dark and exotic."
+
+  - id: lydian
+    next: [lydian_dominant]
+    tonality: "Major with #4"
+    uses: "Jazz, film scores, prog rock. Dreamy, floating quality."
+
+  - id: harmonic_minor
+    next: [phrygian_dominant, hungarian_minor, melodic_minor]
+    tonality: "Minor with raised 7th"
+    uses: "Neoclassical metal, classical, Middle Eastern."
+
+  # Tier 4 - Advanced lead colors
+  - id: melodic_minor
+    next: [altered, lydian_dominant]
+    tonality: "Minor with raised 6th and 7th"
+    uses: "Jazz, fusion. Source of many jazz modes."
+
+  - id: phrygian_dominant
+    next: [double_harmonic_major]
+    tonality: "Phrygian with raised 3rd"
+    uses: "Flamenco, metal, Middle Eastern. Dramatic and exotic."
+
+  - id: hungarian_minor
+    next: [double_harmonic_major]
+    tonality: "Harmonic minor with #4"
+    uses: "Eastern European folk, metal. Extra tension."
+
+  - id: double_harmonic_major
+    next: []
+    tonality: "Major with b2 and b6"
+    uses: "Middle Eastern, Byzantine music. Maximum exotic."
+
+  - id: harmonic_major
+    next: [mixolydian_b6]
+    tonality: "Major with b6"
+    uses: "Jazz, classical. Bittersweet major sound."
+
+  # Tier 5 - Situational & effect scales
+  - id: lydian_dominant
+    next: [whole_tone]
+    tonality: "Lydian with b7"
+    uses: "Jazz dominant chords, Simpsons theme. Bright dominant."
+
+  - id: mixolydian_b6
+    next: []
+    tonality: "Mixolydian with b6"
+    uses: "Jazz, Hindu scale. Melodic minor mode V."
+
+  - id: locrian_sharp2
+    next: []
+    tonality: "Locrian with natural 2nd"
+    uses: "Jazz over half-diminished chords."
+
+  - id: dorian_b2
+    next: []
+    tonality: "Dorian with b2"
+    uses: "Jazz, Phrygian-Dorian hybrid."
+
+  - id: altered
+    next: [diminished_hw]
+    tonality: "All tensions altered"
+    uses: "Jazz dominant resolution. Maximum tension before resolve."
+
+  - id: diminished_hw
+    next: []
+    tonality: "Symmetric: H-W-H-W-H-W-H-W"
+    uses: "Jazz over diminished chords, passing tones."
+
+  - id: diminished_wh
+    next: []
+    tonality: "Symmetric: W-H-W-H-W-H-W-H"
+    uses: "Jazz over dominant 7th chords."
+
+  - id: whole_tone
+    next: []
+    tonality: "Symmetric: all whole steps"
+    uses: "Dreamy, floating, Debussy-style passages."

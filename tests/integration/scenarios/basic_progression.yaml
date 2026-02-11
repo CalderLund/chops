@@ -1,0 +1,31 @@
+name: "Basic Progression from Beginner"
+seed: 12345
+
+history:
+  - date: "2024-01-01T10:00:00Z"
+    rhythm: { rhythm: 8ths, pattern: xx }
+    scale: { scale: pentatonic_minor }
+    position: { position: E }
+    key: C
+    bpm: 60
+
+  - date: "2024-01-02T10:00:00Z"
+    rhythm: { rhythm: 8ths, pattern: xx }
+    scale: { scale: pentatonic_minor }
+    position: { position: E }
+    key: G
+    bpm: 70
+
+  - date: "2024-01-03T10:00:00Z"
+    rhythm: { rhythm: 8ths, pattern: xx }
+    scale: { scale: pentatonic_minor }
+    position: { position: E }
+    key: D
+    bpm: 80
+
+assertions:
+  next_assignment:
+    max_dimension_changes: 1
+
+  invariants:
+    - "never_jump_more_than_one_per_dimension"

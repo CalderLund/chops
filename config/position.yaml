@@ -1,0 +1,22 @@
+# Position configuration (CAGED system)
+# Each position is a significant skill to master
+
+entry_point: E
+
+# CAGED positions - E-shape is the classic "box 1" pentatonic
+# Most players learn E-shape first, then expand from there
+positions:
+  - id: E
+    next: [D, G]  # Gateway - can expand up (D) or down (G) the neck
+
+  - id: D
+    next: [C]  # Continue up the neck
+
+  - id: C
+    next: [A]  # Connect to A
+
+  - id: A
+    next: []  # End of this direction
+
+  - id: G
+    next: []  # End of this direction (can always go back)

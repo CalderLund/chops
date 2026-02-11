@@ -1,0 +1,53 @@
+# Note Pattern configuration
+# Defines melodic patterns for scale practice
+
+entry_point: stepwise
+
+tiers:
+  1: [stepwise]
+  2: [seq-3, seq-4]
+  3: [thirds, fourths, fifths]
+  4: [sixths, sevenths, octaves]
+  5: [triad, seventh]
+  6: [ninth, sixth, add9]
+
+patterns:
+  # Tier 1: Foundation
+  - id: stepwise
+    description: "Scale run (1-2-3-4-5-6-7-8)"
+
+  # Tier 2: Sequences
+  - id: seq-3
+    description: "3-note sequences (123-234-345-...)"
+  - id: seq-4
+    description: "4-note sequences (1234-2345-3456-...)"
+
+  # Tier 3: Simple intervals
+  - id: thirds
+    description: "Ascending thirds (1-3-2-4-3-5-...)"
+  - id: fourths
+    description: "Ascending fourths (1-4-2-5-3-6-...)"
+  - id: fifths
+    description: "Ascending fifths (1-5-2-6-3-7-...)"
+
+  # Tier 4: Extended intervals
+  - id: sixths
+    description: "Ascending sixths (1-6-2-7-3-8-...)"
+  - id: sevenths
+    description: "Ascending sevenths (1-7-2-8-...)"
+  - id: octaves
+    description: "Ascending octaves (1-8-2-9-...)"
+
+  # Tier 5: Basic arpeggios
+  - id: triad
+    description: "Triad arpeggio (1-3-5)"
+  - id: seventh
+    description: "7th chord arpeggio (1-3-5-7)"
+
+  # Tier 6: Extended arpeggios
+  - id: ninth
+    description: "9th chord arpeggio (1-3-5-7-9)"
+  - id: sixth
+    description: "6th chord arpeggio (1-3-5-6)"
+  - id: add9
+    description: "Add9 arpeggio (1-3-5-9)"
