@@ -144,6 +144,7 @@ export function getDbPath(): string {
 export function createDatabase(dbPath?: string): Database.Database {
   const finalPath = dbPath ?? getDbPath();
   const db = new Database(finalPath);
+  db.pragma('busy_timeout = 5000');
   db.pragma('journal_mode = WAL');
 
   // Check if there's an existing database that needs migration
@@ -731,6 +732,7 @@ function runMigrations(db: Database.Database): void {
 
 export function createInMemoryDatabase(): Database.Database {
   const db = new Database(':memory:');
+  db.pragma('busy_timeout = 5000');
   db.exec(SCHEMA);
   // Create default user for tests
   db.prepare("INSERT INTO users (name, created_at) VALUES ('default', ?)").run(
