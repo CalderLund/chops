@@ -1,6 +1,5 @@
-import { useMemo, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ReactFlowProvider } from '@xyflow/react';
 import {
   getGraphLayout,
   getCandidates,
@@ -11,10 +10,10 @@ import {
   type Suggestion,
 } from '../api/client';
 import { useSessionStore } from '../stores/practiceStore';
-import SkillGraph from '../components/graph/SkillGraph';
+import ScaleGallery from '../components/graph/ScaleGallery';
+import ScaleNeck from '../components/graph/ScaleNeck';
 import PracticePanel from '../components/PracticePanel';
 import Metronome from '../components/Metronome';
-import { useState } from 'react';
 import { formatName } from '../utils/format';
 
 // --- Onboarding Card (no graph) ---
@@ -187,104 +186,6 @@ function OnboardingCard({
   );
 }
 
-// --- Legend panel ---
-function LegendPanel({ onClose }: { onClose: () => void }) {
-  return (
-    <div
-      className="absolute right-4 top-4 backdrop-blur-sm rounded-lg p-3 text-xs z-20 shadow-lg"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--bg-surface) 95%, transparent)',
-        border: '1px solid var(--border)',
-      }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Legend</span>
-        <button
-          onClick={onClose}
-          className="transition-colors ml-4 leading-none text-base"
-          style={{ color: 'var(--text-muted)' }}
-          aria-label="Close legend"
-        >
-          &times;
-        </button>
-      </div>
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <span
-            className="w-3 h-3 rounded shrink-0"
-            style={{
-              backgroundColor: 'var(--status-unpracticed-bg)',
-              border: '1px dashed var(--status-unpracticed-border)',
-            }}
-          />
-          <span style={{ color: 'var(--text-secondary)' }}>Unpracticed</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="w-3 h-3 rounded shrink-0"
-            style={{
-              backgroundColor: 'var(--status-practicing-bg)',
-              border: '1px solid var(--status-practicing-border)',
-            }}
-          />
-          <span style={{ color: 'var(--text-secondary)' }}>Practicing</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="w-3 h-3 rounded shrink-0"
-            style={{
-              backgroundColor: 'var(--status-expanded-bg)',
-              border: '2px solid var(--status-expanded-border)',
-            }}
-          />
-          <span style={{ color: 'var(--text-secondary)' }}>Expanded</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="w-3 h-3 rounded shrink-0"
-            style={{
-              backgroundColor: 'var(--status-mastered-bg)',
-              border: '2px solid var(--status-mastered-border)',
-            }}
-          />
-          <span style={{ color: 'var(--text-secondary)' }}>Mastered</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="w-3 h-3 rounded shrink-0"
-            style={{
-              backgroundColor: 'var(--status-struggling-bg)',
-              border: '2px solid var(--status-struggling-border)',
-            }}
-          />
-          <span style={{ color: 'var(--text-secondary)' }}>Needs Attention</span>
-        </div>
-      </div>
-      <div className="mt-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
-        <div className="font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Edge Colors</div>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 shrink-0" style={{ backgroundColor: 'var(--edge-scale)' }} />
-            <span style={{ color: 'var(--text-secondary)' }}>Scale</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 shrink-0" style={{ backgroundColor: 'var(--edge-position)' }} />
-            <span style={{ color: 'var(--text-secondary)' }}>Position</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 shrink-0" style={{ backgroundColor: 'var(--edge-rhythm)' }} />
-            <span style={{ color: 'var(--text-secondary)' }}>Rhythm</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 shrink-0" style={{ backgroundColor: 'var(--edge-note-pattern)' }} />
-            <span style={{ color: 'var(--text-secondary)' }}>Note Pattern</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // --- Main PracticePage ---
 export default function PracticePage() {
   const queryClient = useQueryClient();
@@ -297,9 +198,13 @@ export default function PracticePage() {
     currentSuggestion,
     setCurrentSuggestion,
   } = useSessionStore();
-  const [legendOpen, setLegendOpen] = useState(false);
+
   const [suggestKey, setSuggestKey] = useState(0);
   const autoSelectedRef = useRef(false);
+
+  // Two-level navigation state
+  const [viewLevel, setViewLevel] = useState<'gallery' | 'neck'>('gallery');
+  const [selectedScale, setSelectedScale] = useState<string | null>(null);
 
   // Fetch practice options
   const { data: options } = useQuery({
@@ -317,11 +222,9 @@ export default function PracticePage() {
   const totalPracticed = compoundStatsData?.summary?.total ?? 0;
 
   // Determine view mode
-  const viewMode: 'onboarding' | 'graph' =
-    totalPracticed === 0 ? 'onboarding' : 'graph';
+  const viewMode: 'onboarding' | 'graph' = totalPracticed === 0 ? 'onboarding' : 'graph';
 
   // Fetch graph layout with suggestion
-  // suggestKey forces a fresh fetch when "Try another" is clicked
   const { data: graphData, isLoading: isLoadingGraph } = useQuery({
     queryKey: ['graphLayout', true, true, suggestKey],
     queryFn: () => getGraphLayout(true, true),
@@ -343,7 +246,7 @@ export default function PracticePage() {
     }
   }, [graphData?.recommendedNodeId, setRecommendedNodeId]);
 
-  // Build candidate scores map and log debug info
+  // Build candidate scores map
   useEffect(() => {
     if (candidatesData) {
       const scoreMap = new Map<string, number>();
@@ -351,140 +254,24 @@ export default function PracticePage() {
         scoreMap.set(c.compoundId, c.probability);
       }
       setCandidateScores(scoreMap);
-
-      // Debug logging for candidate scoring
-      // Flatten to plain string/number values so console.table renders a proper table
-      const tableRows = candidatesData.candidates.map((c) => ({
-        compoundId: c.compoundId,
-        changedDim: c.changedDimension,
-        source: c.sourceCompoundId,
-        score: Number(c.score.toFixed(4)),
-        probability: (c.probability * 100).toFixed(1) + '%',
-        'consol(raw)': Number(c.factors.consolidation.raw.toFixed(3)),
-        'consol(w)': Number(c.factors.consolidation.weighted.toFixed(3)),
-        'stale(raw)': Number(c.factors.staleness.raw.toFixed(3)),
-        'stale(w)': Number(c.factors.staleness.weighted.toFixed(3)),
-        'ready(raw)': Number(c.factors.readiness.raw.toFixed(3)),
-        'ready(w)': Number(c.factors.readiness.weighted.toFixed(3)),
-        'divers(raw)': Number(c.factors.diversity.raw.toFixed(3)),
-        'divers(w)': Number(c.factors.diversity.weighted.toFixed(3)),
-        recency: Number(c.recencyBoost.toFixed(3)),
-        struggling: Number(c.strugglingBoost.toFixed(3)),
-        attempts: c.stats?.attempts ?? 0,
-        emaNpm: c.stats ? Number(c.stats.emaNpm.toFixed(0)) : 0,
-        expanded: c.stats?.hasExpanded ? 'Y' : 'N',
-        mastered: c.stats?.isMastered ? 'Y' : 'N',
-      }));
-      console.groupCollapsed(
-        `[Candidates] ${candidatesData.candidates.length} candidates from compound: ${candidatesData.currentCompound}`,
-      );
-      console.table(tableRows);
-      console.groupEnd();
     }
   }, [candidatesData, setCandidateScores]);
 
-  // Auto-select recommended node
+  // Auto-navigate to recommended scale's neck on first load
   useEffect(() => {
-    if (
-      graphData?.recommendedNodeId &&
-      graphData?.nodes &&
-      !autoSelectedRef.current
-    ) {
-      const recNode = graphData.nodes.find(
-        (n) => n.id === graphData.recommendedNodeId,
-      );
+    if (graphData?.recommendedNodeId && graphData.nodes && !autoSelectedRef.current && viewLevel === 'gallery') {
+      const recNode = graphData.nodes.find((n) => n.id === graphData.recommendedNodeId);
       if (recNode) {
+        // Auto-select the recommended node and navigate to its scale's neck
         setSelectedNode(recNode);
+        setSelectedScale(recNode.data.scale);
+        setViewLevel('neck');
         autoSelectedRef.current = true;
       }
     }
-  }, [graphData, setSelectedNode]);
+  }, [graphData, setSelectedNode, viewLevel]);
 
-  // Filter graph data: practiced + forward neighbors of selected/recommended
-  const filteredData = useMemo(() => {
-    if (!graphData) return null;
-
-    // Build bidirectional neighbor map (for edges between practiced nodes)
-    const neighborMap = new Map<string, Set<string>>();
-    for (const edge of graphData.edges) {
-      if (!neighborMap.has(edge.source)) neighborMap.set(edge.source, new Set());
-      if (!neighborMap.has(edge.target)) neighborMap.set(edge.target, new Set());
-      neighborMap.get(edge.source)!.add(edge.target);
-      neighborMap.get(edge.target)!.add(edge.source);
-    }
-
-    // Build forward-only neighbor map (source → targets where direction is forward)
-    const forwardNeighborMap = new Map<string, Set<string>>();
-    for (const edge of graphData.edges) {
-      if (edge.data.direction === 'forward') {
-        if (!forwardNeighborMap.has(edge.source))
-          forwardNeighborMap.set(edge.source, new Set());
-        forwardNeighborMap.get(edge.source)!.add(edge.target);
-      }
-    }
-
-    // Transitive reduction: remove neighbors reachable via other forward neighbors
-    const transitiveReduce = (sourceId: string | undefined | null, neighborIds: Set<string>): Set<string> => {
-      if (!sourceId || neighborIds.size <= 1) return neighborIds;
-      const redundant = new Set<string>();
-      for (const nId of neighborIds) {
-        // BFS from nId following forward edges to see if it reaches other neighbors
-        const visited = new Set<string>();
-        const queue = [nId];
-        while (queue.length > 0) {
-          const current = queue.shift()!;
-          const fwd = forwardNeighborMap.get(current);
-          if (!fwd) continue;
-          for (const next of fwd) {
-            if (visited.has(next)) continue;
-            visited.add(next);
-            if (neighborIds.has(next) && next !== nId) {
-              redundant.add(next); // next is reachable from nId, so it's redundant
-            }
-            queue.push(next);
-          }
-        }
-      }
-      const result = new Set<string>();
-      for (const id of neighborIds) {
-        if (!redundant.has(id)) result.add(id);
-      }
-      return result;
-    };
-
-    const practicedIds = new Set(graphData.nodes.filter((n) => n.data.attempts > 0).map((n) => n.id));
-
-    // Forward neighbors only for expansion of selected/recommended
-    const selectedForwardIds = selectedNode
-      ? transitiveReduce(selectedNode.id, forwardNeighborMap.get(selectedNode.id) || new Set())
-      : new Set<string>();
-    const recommendedForwardIds = graphData.recommendedNodeId
-      ? transitiveReduce(graphData.recommendedNodeId, forwardNeighborMap.get(graphData.recommendedNodeId) || new Set())
-      : new Set<string>();
-
-    const visibleIds = new Set<string>();
-    practicedIds.forEach((id) => visibleIds.add(id));
-    selectedForwardIds.forEach((id) => visibleIds.add(id));
-    recommendedForwardIds.forEach((id) => visibleIds.add(id));
-    if (selectedNode) visibleIds.add(selectedNode.id);
-    if (graphData.recommendedNodeId) visibleIds.add(graphData.recommendedNodeId);
-
-    const filteredNodes = graphData.nodes.filter((n) => visibleIds.has(n.id));
-    const filteredEdges = graphData.edges.filter(
-      (e) => visibleIds.has(e.source) && visibleIds.has(e.target),
-    );
-
-    return {
-      nodes: filteredNodes,
-      edges: filteredEdges,
-      centerNodeId: graphData.recommendedNodeId ?? graphData.centerNodeId,
-    };
-  }, [graphData, selectedNode]);
-
-  // Derive suggestion from graph recommendation and set it in the store.
-  // Depends on recommendedNodeId (not the full graphData object) to avoid infinite
-  // re-render loops. Also depends on suggestKey so "Try another" always updates,
-  // even if the backend returns the same recommendedNodeId.
+  // Derive suggestion from graph recommendation
   useEffect(() => {
     if (graphData?.recommendedNodeId && graphData.nodes) {
       const node = graphData.nodes.find((n) => n.id === graphData.recommendedNodeId);
@@ -530,7 +317,7 @@ export default function PracticePage() {
     autoSelectedRef.current = false;
     setSelectedNode(null);
     setRecommendedNodeId(null);
-    setSuggestKey((k) => k + 1); // Force fresh graph query with new suggestion
+    setSuggestKey((k) => k + 1);
     queryClient.invalidateQueries({ queryKey: ['candidates'] });
   }, [queryClient, setSelectedNode, setRecommendedNodeId]);
 
@@ -555,9 +342,21 @@ export default function PracticePage() {
     [logMutation],
   );
 
+  // Gallery → Neck navigation
+  const handleSelectScale = useCallback((scaleId: string) => {
+    setSelectedScale(scaleId);
+    setViewLevel('neck');
+  }, []);
+
+  // Neck → Gallery navigation
+  const handleBackToGallery = useCallback(() => {
+    setViewLevel('gallery');
+    setSelectedScale(null);
+    setSelectedNode(null);
+  }, [setSelectedNode]);
+
   // --- Onboarding mode ---
   if (viewMode === 'onboarding') {
-    // For brand new users, we generate suggestion from API directly
     return (
       <OnboardingView
         options={options ?? null}
@@ -595,13 +394,34 @@ export default function PracticePage() {
     );
   }
 
-  const hasGraphData = filteredData && filteredData.nodes.length > 0;
+  if (!graphData) {
+    return (
+      <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 80px)' }}>
+        <p style={{ color: 'var(--text-muted)' }}>No graph data available</p>
+      </div>
+    );
+  }
+
   const isSelectedRecommended = selectedNode?.id === recommendedNodeId;
 
-  // --- Graph + Practice view ---
+  // --- Gallery view (full width, no panel) ---
+  if (viewLevel === 'gallery') {
+    return (
+      <div style={{ height: 'calc(100vh - 80px)' }}>
+        <ScaleGallery
+          nodes={graphData.nodes}
+          edges={graphData.edges}
+          recommendedNodeId={recommendedNodeId}
+          onSelectScale={handleSelectScale}
+        />
+      </div>
+    );
+  }
+
+  // --- Neck view (neck + practice panel) ---
   return (
     <div className="flex flex-col md:flex-row" style={{ height: 'calc(100vh - 80px)' }}>
-      {/* Graph area */}
+      {/* Neck area */}
       <div
         className="flex-1 relative rounded-xl overflow-hidden m-2"
         style={{
@@ -609,44 +429,18 @@ export default function PracticePage() {
           border: '1px solid var(--border)',
         }}
       >
-        {hasGraphData ? (
-          <>
-            <ReactFlowProvider>
-              <SkillGraph
-                initialNodes={filteredData.nodes}
-                initialEdges={filteredData.edges}
-                centerNodeId={filteredData.centerNodeId}
-                recommendedNodeId={recommendedNodeId}
-                selectedNodeId={selectedNode?.id ?? null}
-                onNodeSelect={handleNodeSelect}
-              />
-            </ReactFlowProvider>
-
-            {/* Legend toggle */}
-            <button
-              onClick={() => setLegendOpen(!legendOpen)}
-              className="absolute left-4 bottom-4 text-xs px-2.5 py-1 rounded-md transition-colors z-20"
-              style={{
-                backgroundColor: legendOpen ? 'var(--bg-elevated)' : 'color-mix(in srgb, var(--bg-surface) 90%, transparent)',
-                borderWidth: '1px',
-                borderStyle: 'solid',
-                borderColor: 'var(--border)',
-                color: legendOpen ? 'var(--text-secondary)' : 'var(--text-muted)',
-              }}
-            >
-              Legend
-            </button>
-
-            {legendOpen && <LegendPanel onClose={() => setLegendOpen(false)} />}
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <p style={{ color: 'var(--text-muted)' }}>No graph data available</p>
-          </div>
-        )}
+        <ScaleNeck
+          nodes={graphData.nodes}
+          edges={graphData.edges}
+          selectedScale={selectedScale!}
+          selectedNodeId={selectedNode?.id ?? null}
+          recommendedNodeId={recommendedNodeId}
+          onNodeSelect={handleNodeSelect}
+          onBack={handleBackToGallery}
+        />
       </div>
 
-      {/* Practice panel - desktop: side panel, mobile: bottom sheet */}
+      {/* Practice panel */}
       <div
         className="md:shrink-0 md:h-full md:overflow-hidden max-md:fixed max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:z-40 max-md:max-h-[60vh] max-md:rounded-t-2xl backdrop-blur-sm"
         style={{
@@ -658,7 +452,7 @@ export default function PracticePage() {
         <PracticePanel
           selectedNode={selectedNode}
           isRecommended={isSelectedRecommended}
-          reasoning={graphData?.recommendedReasoning ?? null}
+          reasoning={graphData.recommendedReasoning ?? null}
           suggestion={currentSuggestion}
           options={options ?? null}
           onLogPractice={handleLogPractice}
@@ -701,9 +495,7 @@ function OnboardingView({
     queryFn: () => getGraphLayout(true, true),
   });
 
-  // Derive suggestion from graph data and set it in the store.
-  // Only re-run when recommendedNodeId changes to avoid infinite loops
-  // (creating a new object with generatedAt would cause re-render cycles).
+  // Derive suggestion from graph data
   useEffect(() => {
     if (graphData?.recommendedNodeId) {
       const node = graphData.nodes?.find((n) => n.id === graphData.recommendedNodeId);
@@ -719,14 +511,13 @@ function OnboardingView({
           generatedAt: new Date().toISOString(),
         });
       } else {
-        // Node not in graph (e.g. compound_stats empty but suggestion generated).
         // Parse compound ID: scale+position+rhythm:pattern[+notePattern]
         const id = graphData.recommendedNodeId;
         const parts = id.split('+');
         if (parts.length >= 3) {
           const scale = parts[0];
           const position = parts[1];
-          const rhythmPart = parts[2]; // "rhythm:pattern"
+          const rhythmPart = parts[2];
           const [rhythm, rhythmPattern] = rhythmPart.split(':');
           const notePattern = parts[3] || 'stepwise';
           setCurrentSuggestion({
