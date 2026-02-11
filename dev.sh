@@ -11,6 +11,9 @@ set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
 BASENAME="$(basename "$DIR")"
 
+# Make locally-installed binaries (tsx, vite, etc.) available without npx
+export PATH="$DIR/node_modules/.bin:$DIR/web/node_modules/.bin:$PATH"
+
 # Port assignment: CHOPS_PORT > arg $1 > auto from dir name
 if [ -n "$CHOPS_PORT" ]; then
   PORT="$CHOPS_PORT"
@@ -66,7 +69,7 @@ CHOPS_PORT=$PORT tsx "$DIR/src/server.ts" &
 BACKEND_PID=$!
 
 # Start frontend (Vite dev server proxying to the backend)
-CHOPS_PORT=$PORT VITE_PORT=$VITE_PORT npx --prefix "$DIR/web" vite --port "$VITE_PORT" &
+(cd "$DIR/web" && CHOPS_PORT=$PORT vite --port "$VITE_PORT") &
 FRONTEND_PID=$!
 
 # Clean shutdown on Ctrl-C
