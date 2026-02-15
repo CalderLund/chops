@@ -55,6 +55,9 @@ const theme: ThemeDefinition = {
     '--header-gradient': 'linear-gradient(to right, #0D0D0F, #1A1A1F)',
     '--header-border-accent': 'rgba(212, 160, 86, 0.25)',
     '--font-family': "'DM Sans', Inter, system-ui, -apple-system, sans-serif",
+    '--fretboard-wood': '#1F1A14',
+    '--fretboard-inlay': '#2A2824',
+    '--fretboard-grain': '#2A2420',
   },
 };
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getGraphLayout,
@@ -7,7 +7,6 @@ import {
   getPracticeOptions,
   getCompoundStats,
   type GraphNode,
-  type Suggestion,
 } from '../api/client';
 import { useSessionStore } from '../stores/practiceStore';
 import ScaleGallery from '../components/graph/ScaleGallery';
@@ -18,17 +17,11 @@ import { formatName } from '../utils/format';
 
 // --- Onboarding Card (no graph) ---
 function OnboardingCard({
-  suggestion,
-  reasoning,
   options,
   onLogPractice,
-  onGenerate,
   isLogging,
-  isGenerating,
   logError,
 }: {
-  suggestion: Suggestion | null;
-  reasoning: string | null;
   options: { keys: string[] } | null;
   onLogPractice: (data: {
     bpm: number;
@@ -38,58 +31,28 @@ function OnboardingCard({
     notePattern: string;
     key: string;
   }) => void;
-  onGenerate: () => void;
   isLogging: boolean;
-  isGenerating: boolean;
   logError: string | null;
 }) {
   const [metronomeBpm, setMetronomeBpm] = useState(80);
-  const [selectedKey, setSelectedKey] = useState(suggestion?.key ?? 'C');
+  const [selectedKey, setSelectedKey] = useState('C');
 
-  useEffect(() => {
-    if (suggestion) {
-      setSelectedKey(suggestion.key);
-    }
-  }, [suggestion]);
-
-  if (!suggestion) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div
-          className="rounded-2xl p-8 max-w-md w-full shadow-xl text-center"
-          style={{
-            backgroundColor: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Start Your Journey</h2>
-          <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            Practice exercises to build your skill tree. Each exercise you master unlocks new ones nearby.
-          </p>
-          <button
-            onClick={onGenerate}
-            disabled={isGenerating}
-            className="w-full font-semibold py-3 rounded-xl transition-colors text-sm disabled:opacity-50"
-            style={{
-              backgroundColor: isGenerating ? 'var(--bg-elevated)' : 'var(--cta)',
-              color: isGenerating ? 'var(--text-muted)' : 'var(--bg-deep)',
-            }}
-          >
-            {isGenerating ? 'Generating...' : 'Get Your First Exercise'}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Default first exercise for onboarding
+  const exercise = {
+    scale: 'pentatonic_minor',
+    position: 'E',
+    rhythm: '8ths',
+    notePattern: 'stepwise',
+  };
 
   const handleLog = () => {
     if (metronomeBpm <= 0) return;
     onLogPractice({
       bpm: metronomeBpm,
-      scale: suggestion.scale,
-      position: suggestion.position,
-      rhythm: suggestion.rhythm,
-      notePattern: suggestion.notePattern,
+      scale: exercise.scale,
+      position: exercise.position,
+      rhythm: exercise.rhythm,
+      notePattern: exercise.notePattern,
       key: selectedKey,
     });
   };
@@ -108,25 +71,23 @@ function OnboardingCard({
         </div>
       )}
 
-      {/* Exercise display */}
       <div className="text-center pt-4 pb-6">
+        <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Start Your Journey</h2>
+        <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          Practice exercises to build your skill tree. Each exercise you master unlocks new ones nearby.
+        </p>
         <h1 className="text-3xl sm:text-4xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-          {formatName(suggestion.scale)} Scale
+          {formatName(exercise.scale)} Scale
         </h1>
         <p className="text-xl sm:text-2xl mb-2" style={{ color: 'var(--text-secondary)' }}>
-          {suggestion.position}-Shape <span style={{ color: 'var(--text-muted)' }} className="mx-1">/</span>{' '}
-          {formatName(suggestion.rhythm)}
+          {exercise.position}-Shape <span style={{ color: 'var(--text-muted)' }} className="mx-1">/</span>{' '}
+          {formatName(exercise.rhythm)}
         </p>
         <p className="text-base" style={{ color: 'var(--text-muted)' }}>
-          {formatName(suggestion.notePattern)}
+          {formatName(exercise.notePattern)}
           <span className="mx-2">|</span>
           {selectedKey}
         </p>
-        {reasoning && (
-          <p className="text-sm mt-3 max-w-md mx-auto leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            {reasoning}
-          </p>
-        )}
       </div>
 
       {/* Key */}
@@ -170,18 +131,6 @@ function OnboardingCard({
       >
         {isLogging ? 'Logging...' : `Done - Log at ${metronomeBpm} BPM`}
       </button>
-
-      <div className="text-center">
-        <button
-          type="button"
-          onClick={onGenerate}
-          disabled={isGenerating}
-          className="text-sm transition-colors disabled:opacity-50"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          {isGenerating ? 'Generating...' : 'Try another'}
-        </button>
-      </div>
     </div>
   );
 }
@@ -192,15 +141,8 @@ export default function PracticePage() {
   const {
     selectedNode,
     setSelectedNode,
-    recommendedNodeId,
-    setRecommendedNodeId,
     setCandidateScores,
-    currentSuggestion,
-    setCurrentSuggestion,
   } = useSessionStore();
-
-  const [suggestKey, setSuggestKey] = useState(0);
-  const autoSelectedRef = useRef(false);
 
   // Two-level navigation state
   const [viewLevel, setViewLevel] = useState<'gallery' | 'neck'>('gallery');
@@ -224,9 +166,9 @@ export default function PracticePage() {
   // Determine view mode
   const viewMode: 'onboarding' | 'graph' = totalPracticed === 0 ? 'onboarding' : 'graph';
 
-  // Fetch graph layout with suggestion
+  // Fetch graph layout
   const { data: graphData, isLoading: isLoadingGraph } = useQuery({
-    queryKey: ['graphLayout', true, true, suggestKey],
+    queryKey: ['graphLayout', true, true],
     queryFn: () => getGraphLayout(true, true),
     enabled: viewMode === 'graph',
   });
@@ -239,13 +181,6 @@ export default function PracticePage() {
     staleTime: 30000,
   });
 
-  // Sync recommended node ID from graph data
-  useEffect(() => {
-    if (graphData?.recommendedNodeId) {
-      setRecommendedNodeId(graphData.recommendedNodeId);
-    }
-  }, [graphData?.recommendedNodeId, setRecommendedNodeId]);
-
   // Build candidate scores map
   useEffect(() => {
     if (candidatesData) {
@@ -256,39 +191,6 @@ export default function PracticePage() {
       setCandidateScores(scoreMap);
     }
   }, [candidatesData, setCandidateScores]);
-
-  // Auto-navigate to recommended scale's neck on first load
-  useEffect(() => {
-    if (graphData?.recommendedNodeId && graphData.nodes && !autoSelectedRef.current && viewLevel === 'gallery') {
-      const recNode = graphData.nodes.find((n) => n.id === graphData.recommendedNodeId);
-      if (recNode) {
-        // Auto-select the recommended node and navigate to its scale's neck
-        setSelectedNode(recNode);
-        setSelectedScale(recNode.data.scale);
-        setViewLevel('neck');
-        autoSelectedRef.current = true;
-      }
-    }
-  }, [graphData, setSelectedNode, viewLevel]);
-
-  // Derive suggestion from graph recommendation
-  useEffect(() => {
-    if (graphData?.recommendedNodeId && graphData.nodes) {
-      const node = graphData.nodes.find((n) => n.id === graphData.recommendedNodeId);
-      if (node) {
-        setCurrentSuggestion({
-          rhythm: node.data.rhythm,
-          rhythmPattern: node.data.rhythmPattern,
-          scale: node.data.scale,
-          position: node.data.position,
-          notePattern: node.data.notePattern || 'stepwise',
-          key: 'C',
-          reasoning: graphData.recommendedReasoning ?? '',
-          generatedAt: new Date().toISOString(),
-        });
-      }
-    }
-  }, [graphData?.recommendedNodeId, suggestKey, setCurrentSuggestion]);
 
   // Log practice mutation
   const logMutation = useMutation({
@@ -301,25 +203,15 @@ export default function PracticePage() {
       key: string;
     }) => logPractice(data),
     onSuccess: () => {
-      autoSelectedRef.current = false;
       queryClient.invalidateQueries({ queryKey: ['graphLayout'] });
       queryClient.invalidateQueries({ queryKey: ['candidates'] });
       queryClient.invalidateQueries({ queryKey: ['compoundStats'] });
-      queryClient.invalidateQueries({ queryKey: ['currentSuggestion'] });
       queryClient.invalidateQueries({ queryKey: ['streak'] });
       queryClient.invalidateQueries({ queryKey: ['history'] });
       queryClient.invalidateQueries({ queryKey: ['achievements'] });
       queryClient.invalidateQueries({ queryKey: ['strugglingCompounds'] });
     },
   });
-
-  const handleTryAnother = useCallback(() => {
-    autoSelectedRef.current = false;
-    setSelectedNode(null);
-    setRecommendedNodeId(null);
-    setSuggestKey((k) => k + 1);
-    queryClient.invalidateQueries({ queryKey: ['candidates'] });
-  }, [queryClient, setSelectedNode, setRecommendedNodeId]);
 
   const handleNodeSelect = useCallback(
     (node: GraphNode | null) => {
@@ -358,17 +250,13 @@ export default function PracticePage() {
   // --- Onboarding mode ---
   if (viewMode === 'onboarding') {
     return (
-      <OnboardingView
+      <OnboardingCard
         options={options ?? null}
-        onLogPractice={handleLogPractice}
+        onLogPractice={(data) => {
+          handleLogPractice(data);
+        }}
         isLogging={logMutation.isPending}
         logError={logMutation.isError ? (logMutation.error as Error).message : null}
-        onDone={() => {
-          autoSelectedRef.current = false;
-          queryClient.invalidateQueries({ queryKey: ['compoundStats'] });
-          queryClient.invalidateQueries({ queryKey: ['graphLayout'] });
-          queryClient.invalidateQueries({ queryKey: ['candidates'] });
-        }}
       />
     );
   }
@@ -402,8 +290,6 @@ export default function PracticePage() {
     );
   }
 
-  const isSelectedRecommended = selectedNode?.id === recommendedNodeId;
-
   // --- Gallery view (full width, no panel) ---
   if (viewLevel === 'gallery') {
     return (
@@ -411,7 +297,6 @@ export default function PracticePage() {
         <ScaleGallery
           nodes={graphData.nodes}
           edges={graphData.edges}
-          recommendedNodeId={recommendedNodeId}
           onSelectScale={handleSelectScale}
         />
       </div>
@@ -433,8 +318,7 @@ export default function PracticePage() {
           nodes={graphData.nodes}
           edges={graphData.edges}
           selectedScale={selectedScale!}
-          selectedNodeId={selectedNode?.id ?? null}
-          recommendedNodeId={recommendedNodeId}
+          selectedNode={selectedNode}
           onNodeSelect={handleNodeSelect}
           onBack={handleBackToGallery}
         />
@@ -451,14 +335,9 @@ export default function PracticePage() {
       >
         <PracticePanel
           selectedNode={selectedNode}
-          isRecommended={isSelectedRecommended}
-          reasoning={graphData.recommendedReasoning ?? null}
-          suggestion={currentSuggestion}
           options={options ?? null}
           onLogPractice={handleLogPractice}
-          onTryAnother={handleTryAnother}
           isLogging={logMutation.isPending}
-          isGenerating={false}
           logError={logMutation.isError ? (logMutation.error as Error).message : null}
         />
       </div>
@@ -466,104 +345,3 @@ export default function PracticePage() {
   );
 }
 
-// Separate component for onboarding (fetches its own suggestion)
-function OnboardingView({
-  options,
-  onLogPractice,
-  isLogging,
-  logError,
-  onDone,
-}: {
-  options: { keys: string[] } | null;
-  onLogPractice: (data: {
-    bpm: number;
-    scale: string;
-    position: string;
-    rhythm: string;
-    notePattern: string;
-    key: string;
-  }) => void;
-  isLogging: boolean;
-  logError: string | null;
-  onDone: () => void;
-}) {
-  const { setCurrentSuggestion, currentSuggestion } = useSessionStore();
-
-  // Fetch graph layout with suggestion for onboarding too
-  const { data: graphData } = useQuery({
-    queryKey: ['graphLayout', true, true],
-    queryFn: () => getGraphLayout(true, true),
-  });
-
-  // Derive suggestion from graph data
-  useEffect(() => {
-    if (graphData?.recommendedNodeId) {
-      const node = graphData.nodes?.find((n) => n.id === graphData.recommendedNodeId);
-      if (node) {
-        setCurrentSuggestion({
-          rhythm: node.data.rhythm,
-          rhythmPattern: node.data.rhythmPattern,
-          scale: node.data.scale,
-          position: node.data.position,
-          notePattern: node.data.notePattern || 'stepwise',
-          key: 'C',
-          reasoning: graphData.recommendedReasoning ?? '',
-          generatedAt: new Date().toISOString(),
-        });
-      } else {
-        // Parse compound ID: scale+position+rhythm:pattern[+notePattern]
-        const id = graphData.recommendedNodeId;
-        const parts = id.split('+');
-        if (parts.length >= 3) {
-          const scale = parts[0];
-          const position = parts[1];
-          const rhythmPart = parts[2];
-          const [rhythm, rhythmPattern] = rhythmPart.split(':');
-          const notePattern = parts[3] || 'stepwise';
-          setCurrentSuggestion({
-            rhythm,
-            rhythmPattern: rhythmPattern || 'xx',
-            scale,
-            position,
-            notePattern,
-            key: 'C',
-            reasoning: graphData.recommendedReasoning ?? '',
-            generatedAt: new Date().toISOString(),
-          });
-        }
-      }
-    }
-  }, [graphData?.recommendedNodeId, setCurrentSuggestion]);
-
-  const handleLog = useCallback(
-    (data: {
-      bpm: number;
-      scale: string;
-      position: string;
-      rhythm: string;
-      notePattern: string;
-      key: string;
-    }) => {
-      onLogPractice(data);
-      onDone();
-    },
-    [onLogPractice, onDone],
-  );
-
-  const handleGenerate = useCallback(() => {
-    // Re-fetch graph layout to get a new suggestion
-  }, []);
-
-  return (
-    <OnboardingCard
-      suggestion={currentSuggestion}
-      reasoning={graphData?.recommendedReasoning ?? null}
-      options={options}
-      onLogPractice={handleLog}
-      onGenerate={handleGenerate}
-      isLogging={isLogging}
-      isGenerating={false}
-      logError={logError}
-    />
-  );
-}

@@ -66,24 +66,13 @@ function pickBestStatus(statuses: StatusKey[]): StatusKey {
 }
 
 // Guitar silhouette SVG
-function GuitarSilhouette({ status, isRecommended }: { status: StatusKey; isRecommended: boolean }) {
+function GuitarSilhouette({ status }: { status: StatusKey }) {
   const fill = getStatusColor(status, 'fill');
   const stroke = getStatusColor(status, 'stroke');
-  const glowColor = isRecommended ? 'var(--accent-primary)' : stroke;
 
   return (
     <svg width="48" height="72" viewBox="0 0 48 72" className="block mx-auto">
-      {/* Glow filter for recommended */}
-      {isRecommended && (
-        <defs>
-          <filter id="guitar-glow" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-        </defs>
-      )}
-
-      <g filter={isRecommended ? 'url(#guitar-glow)' : undefined}>
+      <g>
         {/* Headstock */}
         <rect x="18" y="0" width="12" height="6" rx="2" fill={stroke} opacity={0.6} />
 
@@ -97,10 +86,10 @@ function GuitarSilhouette({ status, isRecommended }: { status: StatusKey; isReco
         <rect x="20" y="6" width="8" height="22" rx="1" fill={stroke} opacity={0.25} />
 
         {/* Body - upper bout */}
-        <ellipse cx="24" cy="38" rx="15" ry="11" fill={fill} stroke={glowColor} strokeWidth={1.5} />
+        <ellipse cx="24" cy="38" rx="15" ry="11" fill={fill} stroke={stroke} strokeWidth={1.5} />
 
         {/* Body - lower bout */}
-        <ellipse cx="24" cy="54" rx="19" ry="14" fill={fill} stroke={glowColor} strokeWidth={1.5} />
+        <ellipse cx="24" cy="54" rx="19" ry="14" fill={fill} stroke={stroke} strokeWidth={1.5} />
 
         {/* Sound hole */}
         <circle cx="24" cy="44" r="5" fill="var(--bg-deep)" stroke={stroke} strokeWidth={0.5} opacity={0.4} />
@@ -124,14 +113,12 @@ interface ScaleAggregate {
 export interface ScaleGalleryProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
-  recommendedNodeId: string | null;
   onSelectScale: (scaleId: string) => void;
 }
 
 export default function ScaleGallery({
   nodes,
   edges: _edges,
-  recommendedNodeId,
   onSelectScale,
 }: ScaleGalleryProps) {
   const [hoveredScale, setHoveredScale] = useState<string | null>(null);
@@ -161,13 +148,6 @@ export default function ScaleGallery({
     }
     return m;
   }, [nodes]);
-
-  // Which scale is recommended?
-  const recommendedScale = useMemo(() => {
-    if (!recommendedNodeId) return null;
-    const node = nodes.find((n) => n.id === recommendedNodeId);
-    return node?.data.scale ?? null;
-  }, [nodes, recommendedNodeId]);
 
   return (
     <div
@@ -207,7 +187,6 @@ export default function ScaleGallery({
                 const agg = scaleData.get(scaleId);
                 const status = agg?.bestStatus ?? 'unpracticed';
                 const practiced = agg?.practiced ?? 0;
-                const isRecommended = scaleId === recommendedScale;
                 const isHovered = hoveredScale === scaleId;
                 const hasPractice = practiced > 0;
 
@@ -222,29 +201,14 @@ export default function ScaleGallery({
                       width: 120,
                       padding: '12px 8px 10px',
                       backgroundColor: isHovered ? 'var(--bg-elevated)' : 'var(--bg-surface)',
-                      border: `2px solid ${isRecommended ? 'var(--accent-primary)' : hasPractice ? getStatusColor(status, 'stroke') : 'var(--border)'}`,
+                      border: `2px solid ${hasPractice ? getStatusColor(status, 'stroke') : 'var(--border)'}`,
                       opacity: hasPractice ? 1 : 0.65,
                       transform: isHovered ? 'translateY(-2px)' : 'none',
-                      boxShadow: isRecommended
-                        ? '0 0 16px color-mix(in srgb, var(--accent-primary) 30%, transparent)'
-                        : isHovered
-                          ? '0 4px 12px rgba(0,0,0,0.3)'
-                          : 'none',
+                      boxShadow: isHovered ? '0 4px 12px rgba(0,0,0,0.3)' : 'none',
                     }}
                   >
-                    {/* Recommended dot */}
-                    {isRecommended && (
-                      <div
-                        className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full"
-                        style={{
-                          backgroundColor: 'var(--accent-primary)',
-                          boxShadow: '0 0 8px var(--accent-primary)',
-                        }}
-                      />
-                    )}
-
                     {/* Guitar silhouette */}
-                    <GuitarSilhouette status={status} isRecommended={isRecommended} />
+                    <GuitarSilhouette status={status} />
 
                     {/* Scale name */}
                     <span
@@ -316,13 +280,6 @@ export default function ScaleGallery({
               }}
             />
             Mastered
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: 'var(--accent-primary)' }}
-            />
-            Recommended
           </span>
         </div>
       </div>
