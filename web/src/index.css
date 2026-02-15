@@ -29,34 +29,6 @@ body {
   min-height: 100vh;
 }
 
-/* React Flow customizations */
-.react-flow__node {
-  cursor: pointer;
-}
-
-.react-flow__edge-path {
-  stroke-width: 2;
-}
-
-.react-flow__minimap {
-  background-color: var(--bg-surface, #16213e);
-}
-
-.react-flow__controls {
-  background-color: var(--bg-surface, #16213e);
-  border: 1px solid var(--border, #374151);
-}
-
-.react-flow__controls-button {
-  background-color: var(--bg-elevated, #1e3a5f);
-  border-bottom: 1px solid var(--border, #374151);
-  fill: var(--text-primary, white);
-}
-
-.react-flow__controls-button:hover {
-  background-color: var(--accent-primary, #2563eb);
-}
-
 /* Gold shimmer animation for mastered nodes */
 @keyframes gold-shimmer {
   0% { box-shadow: 0 0 4px var(--status-mastered-border, #4BC77A); }

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getStreakInfo, type GraphNode, type Suggestion, type PracticeOptions } from '../api/client';
+import { getStreakInfo, type GraphNode, type PracticeOptions } from '../api/client';
 import theme from '../themes';
 import Metronome from './Metronome';
 import { formatName } from '../utils/format';
@@ -55,9 +55,6 @@ interface CelebrationData {
 
 interface PracticePanelProps {
   selectedNode: GraphNode | null;
-  isRecommended: boolean;
-  reasoning: string | null;
-  suggestion: Suggestion | null;
   options: PracticeOptions | null;
   onLogPractice: (data: {
     bpm: number;
@@ -67,46 +64,21 @@ interface PracticePanelProps {
     notePattern: string;
     key: string;
   }) => void;
-  onTryAnother: () => void;
   isLogging: boolean;
-  isGenerating: boolean;
   logError: string | null;
 }
 
 export default function PracticePanel({
   selectedNode,
-  isRecommended,
-  reasoning,
-  suggestion,
   options,
   onLogPractice,
-  onTryAnother,
   isLogging,
-  isGenerating,
   logError,
 }: PracticePanelProps) {
   const [metronomeBpm, setMetronomeBpm] = useState(80);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
-  const [selectedKey, setSelectedKey] = useState(suggestion?.key ?? 'C');
+  const [selectedKey, setSelectedKey] = useState('C');
   const celebrationMessages = theme.celebrationMessages ?? DEFAULT_CELEBRATION_MESSAGES;
-
-  // Sync key when suggestion changes
-  useEffect(() => {
-    if (suggestion) {
-      setSelectedKey(suggestion.key);
-    }
-  }, [suggestion]);
-
-  // Auto-advance after celebration
-  useEffect(() => {
-    if (celebration) {
-      const timer = setTimeout(() => {
-        setCelebration(null);
-        onTryAnother();
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [celebration, onTryAnother]);
 
   const { data: streak } = useQuery({
     queryKey: ['streak'],
@@ -172,7 +144,15 @@ export default function PracticePanel({
             </span>
           </div>
         )}
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading next exercise...</p>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <button
+            onClick={() => setCelebration(null)}
+            className="underline"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Dismiss
+          </button>
+        </p>
       </div>
     );
   }
@@ -253,19 +233,6 @@ export default function PracticePanel({
         </div>
       )}
 
-      {/* Reasoning */}
-      {isRecommended && reasoning && (
-        <div
-          className="mx-5 mb-3 px-3 py-2 rounded-lg"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--status-expanded-border) 10%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--status-expanded-border) 20%, transparent)',
-          }}
-        >
-          <p className="text-xs" style={{ color: 'color-mix(in srgb, var(--status-expanded-border) 80%, var(--text-primary))' }}>{reasoning}</p>
-        </div>
-      )}
-
       {/* Key picker */}
       <div className="px-5 mb-4">
         <div>
@@ -324,23 +291,6 @@ export default function PracticePanel({
           {isLogging ? 'Logging...' : `Done - Log at ${metronomeBpm} BPM`}
         </button>
       </div>
-
-      {/* Try another (only for recommended) */}
-      {isRecommended && (
-        <div className="text-center pb-5">
-          <button
-            type="button"
-            onClick={onTryAnother}
-            disabled={isGenerating}
-            className="text-sm transition-colors disabled:opacity-50"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={(e) => { (e.target as HTMLElement).style.color = 'var(--text-secondary)'; }}
-            onMouseLeave={(e) => { (e.target as HTMLElement).style.color = 'var(--text-muted)'; }}
-          >
-            {isGenerating ? 'Generating...' : 'Try another'}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
